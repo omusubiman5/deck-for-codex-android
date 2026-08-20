@@ -41,8 +41,7 @@ import kotlin.math.roundToInt
 
 @SuppressLint("SetTextI18n")
 class MainActivity : Activity(), RelayEvents {
-  private enum class Screen { CONTROL, PALETTE, DANGER, USAGE, HOSTS }
-  private data class DangerNonce(val value: String, val expiresAt: Long)
+  private enum class Screen { CONTROL, PALETTE, USAGE, HOSTS }
 
   private lateinit var repository: ProfileRepository
   private lateinit var discovery: NearbyDiscovery
@@ -57,11 +56,9 @@ class MainActivity : Activity(), RelayEvents {
   private var usageMode = "auto"
   private var paletteCategory = "すべて"
   private var paletteQuery = ""
-  private var selectedKeycap = OfficialKeycaps.safe.first()
+  private var selectedKeycap = OfficialKeycaps.all.first()
   private var errorMessage: String? = null
   private val keycapResults = mutableMapOf<String, String>()
-  private val dangerNonces = mutableMapOf<String, DangerNonce>()
-  private val dangerArming = mutableSetOf<String>()
   private val pressButtons = mutableListOf<CommandButton>()
   private val scrollPositions = mutableMapOf<Screen, Int>()
   private var activeScroll: ScrollView? = null
@@ -165,7 +162,6 @@ class MainActivity : Activity(), RelayEvents {
     when (currentScreen) {
       Screen.CONTROL -> renderControl(content)
       Screen.PALETTE -> renderPalette(content)
-      Screen.DANGER -> renderDanger(content)
       Screen.USAGE -> renderUsage(content)
       Screen.HOSTS -> renderHosts(content)
     }
@@ -192,24 +188,22 @@ class MainActivity : Activity(), RelayEvents {
   private fun appBar(): View {
     val bar = LinearLayout(this).apply {
       orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-      setPadding(dp(8), 0, dp(10), 0); setBackgroundColor(if (currentScreen == Screen.DANGER) RED else NAVY)
+      setPadding(dp(8), 0, dp(10), 0); setBackgroundColor(NAVY)
     }
-    val menu = flatButton(if (currentScreen == Screen.CONTROL) "☰" else "‹", if (currentScreen == Screen.DANGER) RED else NAVY, Color.WHITE).apply {
+    val menu = flatButton(if (currentScreen == Screen.CONTROL) "☰" else "‹", NAVY, Color.WHITE).apply {
       textSize = 23f
       setOnClickListener { if (currentScreen == Screen.CONTROL) showAppMenu(this) else showScreen(Screen.CONTROL) }
     }
     bar.addView(menu, LinearLayout.LayoutParams(dp(52), ViewGroup.LayoutParams.MATCH_PARENT))
     val title = when (currentScreen) {
       Screen.CONTROL -> "Codex Micro"
-      Screen.PALETTE -> "公式 Keycap 27"
-      Screen.DANGER -> "Danger — 危険操作"
+      Screen.PALETTE -> "公式 Keycap 30"
       Screen.USAGE -> "利用状況 & 制限"
       Screen.HOSTS -> "ホスト & 設定"
     }
     bar.addView(label(title, 20f, Color.WHITE, true), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
     if (currentScreen == Screen.CONTROL) bar.addView(chip(statusLabel(connectionState), statusColor(connectionState)))
     else if (currentScreen == Screen.PALETTE) bar.addView(label("⌕", 27f, Color.WHITE, false))
-    else if (currentScreen == Screen.DANGER) bar.addView(label("⚠", 24f, Color.WHITE, true))
     else {
       val overflow = flatButton("⋮", NAVY, Color.WHITE).apply { textSize = 26f; setOnClickListener { showScreenMenu(this) } }
       bar.addView(overflow, LinearLayout.LayoutParams(dp(48), ViewGroup.LayoutParams.MATCH_PARENT))
@@ -256,19 +250,13 @@ class MainActivity : Activity(), RelayEvents {
     RelayClient.ACTION_SLOTS.forEachIndexed { index, slot ->
       val label = snapshot?.actionLabels?.get(slot) ?: defaultActionLabel(slot)
       val keycap = snapshot?.actionKeycaps?.get(slot).orEmpty()
-      val danger = keycap in OfficialKeycaps.dangerIds
       val operation = when {
         keycap.isBlank() -> "待機中"
-        danger -> "Danger画面"
         else -> "実行"
       }
       val button = commandButton("ACT0${index + 1}\n$label\n$operation", keycapColor(keycap), Color.WHITE)
       button.isEnabled = canCommand()
-      if (danger) {
-        button.setOnClickListener { showDangerWarning() }
-      } else {
-        bindPress(button) { { act -> CommandFactory.action(slot, act) } }
-      }
+      bindPress(button) { { act -> CommandFactory.action(slot, act) } }
       actionGrid.addView(button, gridParams(6, 82))
     }
     content.addView(actionGrid)
@@ -298,7 +286,7 @@ class MainActivity : Activity(), RelayEvents {
         if (paletteCategory == category) Color.WHITE else TEXT).apply { setOnClickListener { paletteCategory = category; render() } }, weighted(left = 3))
     }
     content.addView(categories, match(top = 8))
-    val filtered = OfficialKeycaps.safe.filter { item ->
+    val filtered = OfficialKeycaps.all.filter { item ->
       (paletteCategory == "すべて" || item.category == paletteCategory) &&
         (paletteQuery.isBlank() || listOf(item.id, item.name, item.description).any { it.contains(paletteQuery, true) })
     }
@@ -307,7 +295,7 @@ class MainActivity : Activity(), RelayEvents {
     filtered.forEach { keycap ->
       val button = commandButton("${keycap.id}\n${keycap.name}", keycapColor(keycap.id), Color.WHITE)
       val capability = snapshot?.keycapCapabilities?.get(keycap.id)
-      val available = canCommand() && capability?.status == "ready" && capability.danger == (keycap.id in OfficialKeycaps.dangerIds)
+      val available = canCommand() && capability?.status == "ready"
       button.alpha = if (available) 1f else .42f
       button.isEnabled = available
       if (keycap.id == "MIC") bindMicPress(button)
@@ -323,7 +311,6 @@ class MainActivity : Activity(), RelayEvents {
       "互換性" to "Windows / Mac",
       "状態" to when {
         !canCommand() -> "接続待ち"
-        selectedKeycap.id in OfficialKeycaps.dangerIds -> "Danger専用画面"
         snapshot?.keycapCapabilities?.get(selectedKeycap.id)?.status != "ready" -> "registry／handler未解決"
         else -> "実行可能（Codex画面条件あり） ✓"
       }
@@ -331,44 +318,6 @@ class MainActivity : Activity(), RelayEvents {
       "Action型" to (snapshot?.keycapCapabilities?.get(selectedKeycap.id)?.actionType ?: "—"),
       "最終結果" to (keycapResults[selectedKeycap.id] ?: "未実行")
     )))
-  }
-
-  private fun renderDanger(content: LinearLayout) {
-    val current = snapshot
-    val threadKey = current?.activeThreadKey
-    val agent = current?.agents?.firstOrNull { it.threadKey == threadKey }
-    content.addView(alert("危険操作は現在のCodex taskを直接変更します。通常Paletteには表示されません。"))
-    content.addView(infoCard(agent?.projectName ?: current?.activeThreadTitle ?: "対象taskなし", listOf(
-      "Task" to (current?.activeThreadTitle ?: agent?.nativeTitle ?: "—"),
-      "Project" to (agent?.projectName ?: "—"),
-      "Host" to (current?.hostName ?: "—"),
-      "Thread" to (threadKey?.takeLast(18) ?: "—"),
-      "承認要求" to if (current?.approvalPending == true) "あり" else "なし"
-    )))
-    content.addView(sectionHeader("DANGER KEYCAPS", "3 キー"))
-    val grid = grid(3)
-    OfficialKeycaps.danger.forEach { keycap ->
-      val capability = current?.keycapCapabilities?.get(keycap.id)
-      val localAndRelayAgree = capability?.status == "ready" && capability.danger
-      val contextReady = threadKey != null && (keycap.id == "DEL" || current.approvalPending)
-      val nonce = dangerNonces[keycap.id]?.takeIf { it.expiresAt > System.currentTimeMillis() }
-      val button = commandButton("${keycap.id}\n${keycap.name}\n${if (nonce != null) "1.2秒長押し" else "確認待ち"}", RED, Color.WHITE)
-      button.isEnabled = canCommand() && localAndRelayAgree && contextReady && nonce != null
-      button.alpha = if (button.isEnabled) 1f else .42f
-      bindDangerHold(button, keycap.id) {
-        val armed = dangerNonces.remove(keycap.id) ?: return@bindDangerHold
-        send(CommandFactory.dangerKeycap(keycap.id, armed.value, DANGER_HOLD_MS.toInt()), "DANGER:${keycap.id}")
-      }
-      grid.addView(button, gridParams(3, 96))
-    }
-    content.addView(grid)
-    val mismatch = OfficialKeycaps.danger.filter { id -> snapshot?.keycapCapabilities?.get(id.id)?.danger != true }
-    if (mismatch.isNotEmpty()) content.addView(alert("危険分類のprotocol不整合: ${mismatch.joinToString { it.id }}"), match(top = 8))
-    if (threadKey == null) content.addView(alert("stable thread IDを取得できないため危険操作を無効化しています。"), match(top = 8))
-    else if (current?.approvalPending != true) content.addView(small("APPR / REJ: 現在の承認要求がないため無効", MUTED), match(top = 8))
-    content.addView(flatButton("確認nonceを更新", PALE_BLUE, BLUE).apply { setOnClickListener { requestDangerArms(force = true) } }, match(top = 10, height = 48))
-    content.addView(sectionHeader("最終結果"))
-    content.addView(infoCard("危険操作", OfficialKeycaps.danger.map { it.id to (keycapResults[it.id] ?: "未実行") }))
   }
 
   private fun renderUsage(content: LinearLayout) {
@@ -497,32 +446,21 @@ class MainActivity : Activity(), RelayEvents {
 
   private fun showAppMenu(anchor: View) {
     PopupMenu(this, anchor).apply {
-      listOf("Control", "公式 Keycap Palette", "⚠ 危険操作", "Usage / 制限", "Hosts / 設定", "QRをスキャン", "診断情報", "このアプリについて").forEach { menu.add(it) }
+      listOf("Control", "公式 Keycap Palette", "Usage / 制限", "Hosts / 設定", "QRをスキャン", "診断情報", "このアプリについて").forEach { menu.add(it) }
       setOnMenuItemClickListener {
         when (it.title.toString()) {
           "Control" -> showScreen(Screen.CONTROL)
           "公式 Keycap Palette" -> showScreen(Screen.PALETTE)
-          "⚠ 危険操作" -> showDangerWarning()
           "Usage / 制限" -> showScreen(Screen.USAGE)
           "Hosts / 設定" -> showScreen(Screen.HOSTS)
           "QRをスキャン" -> scanQr()
           "診断情報" -> toast("${statusLabel(connectionState)} / ${profile?.endpoint ?: "未登録"}")
           else -> AlertDialog.Builder(this@MainActivity).setTitle("Codex Micro Mobile")
-            .setMessage("Version 0.2.5\nMIT License").setPositiveButton("閉じる", null).show()
+            .setMessage("Version 0.2.6\nMIT License").setPositiveButton("閉じる", null).show()
         }; true
       }
       show()
     }
-  }
-
-  private fun showDangerWarning() {
-    AlertDialog.Builder(this).setTitle("危険操作")
-      .setMessage("APPR、REJ、DELは現在のCodex taskを直接変更します。通常Paletteからは実行できません。対象taskを確認してから開いてください。")
-      .setNegativeButton("キャンセル", null)
-      .setPositiveButton("Danger画面を開く") { _, _ ->
-        dangerNonces.clear(); dangerArming.clear(); showScreen(Screen.DANGER)
-        handler.post { requestDangerArms() }
-      }.show()
   }
 
   private fun showScreenMenu(anchor: View) {
@@ -630,65 +568,6 @@ class MainActivity : Activity(), RelayEvents {
     button.setOnClickListener { }
   }
 
-  private fun bindDangerHold(button: CommandButton, keycapId: String, action: () -> Unit) {
-    var active = false
-    var executed = false
-    var startedAt = 0L
-    val original = button.text.toString()
-    lateinit var progress: Runnable
-    val execute = Runnable {
-      if (active) {
-        active = false; executed = true; button.isPressed = false; haptic(); action()
-        button.text = "$keycapId\n送信済み"
-      }
-    }
-    progress = Runnable {
-      if (active) {
-        val remaining = (DANGER_HOLD_MS - (System.currentTimeMillis() - startedAt)).coerceAtLeast(0)
-        button.text = "$keycapId\n長押し中\n${remaining}ms"
-        handler.postDelayed(progress, 100)
-      }
-    }
-    button.cancelPress = {
-      active = false; handler.removeCallbacks(execute); handler.removeCallbacks(progress)
-      button.isPressed = false; button.text = original
-    }
-    pressButtons += button
-    button.setOnTouchListener { view, event ->
-      when (event.actionMasked) {
-        MotionEvent.ACTION_DOWN -> {
-          active = true; executed = false; startedAt = System.currentTimeMillis(); view.isPressed = true
-          handler.post(progress); handler.postDelayed(execute, DANGER_HOLD_MS)
-        }
-        MotionEvent.ACTION_MOVE -> {
-          if (active && (event.x < 0f || event.y < 0f || event.x >= view.width || event.y >= view.height)) {
-            active = false; handler.removeCallbacks(execute); handler.removeCallbacks(progress)
-            view.isPressed = false; button.text = "$keycapId\nキャンセル"
-          }
-        }
-        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-          val wasActive = active
-          active = false; handler.removeCallbacks(execute); handler.removeCallbacks(progress); view.isPressed = false
-          if (event.actionMasked == MotionEvent.ACTION_UP && wasActive && !executed) toast("$keycapId は1.2秒長押しで実行します。")
-          if (!executed) button.text = original
-          if (event.actionMasked == MotionEvent.ACTION_UP) view.performClick()
-        }
-      }; true
-    }
-    button.setOnClickListener { }
-  }
-
-  private fun requestDangerArms(force: Boolean = false) {
-    val current = snapshot ?: return
-    val threadKey = current.activeThreadKey ?: return
-    if (force) { dangerNonces.clear(); dangerArming.clear() }
-    OfficialKeycaps.danger.forEach { keycap ->
-      if ((keycap.id == "APPR" || keycap.id == "REJ") && !current.approvalPending) return@forEach
-      if (dangerNonces[keycap.id]?.expiresAt?.let { it > System.currentTimeMillis() } == true || !dangerArming.add(keycap.id)) return@forEach
-      send(CommandFactory.dangerArm(keycap.id, threadKey), "DANGER_ARM:${keycap.id}")
-    }
-  }
-
   private fun bindRepeat(button: CommandButton, direction: String) {
     var active = false
     lateinit var repeat: Runnable
@@ -728,33 +607,20 @@ class MainActivity : Activity(), RelayEvents {
 
   override fun onConnection(state: String, detail: String?) {
     connectionState = state; connectionDetail = detail
-    if (state != "ready") { dangerNonces.clear(); dangerArming.clear(); releasePresses() }
+    if (state != "ready") releasePresses()
     if (state in setOf("certificate_mismatch", "protocol_mismatch")) errorMessage = detail ?: state
     if (state == "ready" && !connectedMarked) { connectedMarked = true; profile?.let { repository.markConnected(it.id) } }
     render()
   }
 
   override fun onSnapshot(snapshot: DeckSnapshot) {
-    val threadChanged = this.snapshot?.activeThreadKey != snapshot.activeThreadKey
     this.snapshot = snapshot; connectionState = "ready"; connectionDetail = snapshot.hostName; errorMessage = null
-    if (threadChanged) { dangerNonces.clear(); dangerArming.clear() }
     if (pressButtons.any { it.isPressed }) return
     render()
-    if (currentScreen == Screen.DANGER && (threadChanged || dangerNonces.values.none { it.expiresAt > System.currentTimeMillis() })) {
-      handler.post { requestDangerArms() }
-    }
   }
 
   override fun onCommandResult(label: String, ok: Boolean, error: String?, data: JSONObject?) {
     when {
-      label.startsWith("DANGER_ARM:") -> {
-        val id = label.substringAfter(':'); dangerArming.remove(id)
-        val nonce = data?.optString("confirmationNonce").orEmpty()
-        val expiresAt = data?.optLong("expiresAt") ?: 0L
-        if (ok && nonce.isNotBlank() && expiresAt > System.currentTimeMillis()) dangerNonces[id] = DangerNonce(nonce, expiresAt)
-        else keycapResults[id] = error ?: "確認nonceを取得できませんでした。"
-        if (currentScreen == Screen.DANGER) render()
-      }
       label.startsWith("KEYCAP:") -> {
         val id = label.substringAfter(':')
         keycapResults[id] = if (ok) "成功 ${time(System.currentTimeMillis())}" else (error ?: "実行失敗")
@@ -764,12 +630,6 @@ class MainActivity : Activity(), RelayEvents {
       label.startsWith("MIC:") -> {
         keycapResults["MIC"] = if (ok) "${label.substringAfter(':')} 成功 ${time(System.currentTimeMillis())}" else (error ?: "実行失敗")
         if (!ok) { errorMessage = "MIC: ${keycapResults["MIC"]}"; render() }
-      }
-      label.startsWith("DANGER:") -> {
-        val id = label.substringAfter(':'); dangerNonces.remove(id)
-        keycapResults[id] = if (ok) "成功 ${time(System.currentTimeMillis())}" else (error ?: "実行失敗")
-        if (!ok) errorMessage = "$id: ${keycapResults[id]}"
-        if (ok && id == "DEL") showScreen(Screen.CONTROL) else { render(); handler.post { requestDangerArms() } }
       }
       !ok -> { errorMessage = "$label: ${error ?: "実行できませんでした。"}"; render() }
       else -> toast("$label: 完了")
@@ -861,7 +721,6 @@ class MainActivity : Activity(), RelayEvents {
 
   companion object {
     private const val NEARBY_PERMISSION_REQUEST = 4701
-    private const val DANGER_HOLD_MS = 1_200L
     private val NAVY = Color.rgb(0, 39, 58)
     private val SURFACE = Color.rgb(246, 247, 249)
     private val TEXT = Color.rgb(15, 24, 39)

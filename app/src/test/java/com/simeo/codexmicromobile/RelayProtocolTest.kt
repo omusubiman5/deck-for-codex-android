@@ -29,7 +29,7 @@ class RelayProtocolTest {
     }
     val windows = JSONArray().put(JSONObject().put("kind", "five-hour").put("usedPercent", 25.0))
       .put(JSONObject().put("kind", "weekly").put("usedPercent", 101.0))
-    val message = JSONObject().put("protocol", 1).put("host", JSONObject().put("hostName", "Mac").put("platform", "darwin"))
+    val message = JSONObject().put("protocol", 2).put("host", JSONObject().put("hostName", "Mac").put("platform", "darwin"))
       .put("snapshot", JSONObject().put("slots", slots).put("usage", JSONObject().put("windows", windows)))
     val parsed = RelayProtocol.parseSnapshot(message, fallback)!!
     assertEquals(HostPlatform.MACOS, parsed.platform)
@@ -50,10 +50,11 @@ class RelayProtocolTest {
     assertTrue(CommandFactory.isAllowed(CommandFactory.joystick("down", 1)))
     assertTrue(CommandFactory.isAllowed(CommandFactory.encoder(1)))
     assertTrue(CommandFactory.isAllowed(CommandFactory.keycap("APPS")))
+    assertTrue(CommandFactory.isAllowed(CommandFactory.keycap("APPR")))
+    assertTrue(CommandFactory.isAllowed(CommandFactory.keycap("REJ")))
+    assertTrue(CommandFactory.isAllowed(CommandFactory.keycap("DEL")))
     assertTrue(CommandFactory.isAllowed(CommandFactory.keycapPress("MIC", 1)))
     assertTrue(CommandFactory.isAllowed(CommandFactory.keycapPress("MIC", 0)))
-    assertTrue(CommandFactory.isAllowed(CommandFactory.dangerArm("DEL", "thread")))
-    assertTrue(CommandFactory.isAllowed(CommandFactory.dangerKeycap("DEL", "12345678-1234-1234-1234-123456789012", 1200)))
     assertTrue(CommandFactory.isAllowed(CommandFactory.rateLimitReset()))
     assertTrue(CommandFactory.isAllowed(CommandFactory.environmentAction(3)))
     assertTrue(CommandFactory.isAllowed(CommandFactory.newTask()))
@@ -63,10 +64,10 @@ class RelayProtocolTest {
     assertFalse(CommandFactory.isAllowed(CommandFactory.environmentAction(4)))
     assertFalse(CommandFactory.isAllowed(CommandFactory.agentTap(6, "thread")))
     assertFalse(CommandFactory.isAllowed(CommandFactory.keycap("MIC")))
-    assertFalse(CommandFactory.isAllowed(CommandFactory.keycap("DEL")))
     assertFalse(CommandFactory.isAllowed(CommandFactory.keycapPress("FAST", 1)))
-    assertFalse(CommandFactory.isAllowed(CommandFactory.dangerKeycap("DEL", "short", 1200)))
-    assertFalse(CommandFactory.isAllowed(CommandFactory.dangerKeycap("DEL", "12345678-1234-1234-1234-123456789012", 1199)))
+    assertFalse(CommandFactory.isAllowed(JSONObject().put("kind", "danger-arm").put("keycapId", "DEL").put("threadKey", "thread")))
+    assertFalse(CommandFactory.isAllowed(CommandFactory.keycap("DEL").put("confirmationNonce", "12345678-1234-1234-1234-123456789012")))
+    assertEquals(2, RelayProtocol.VERSION)
   }
 
   @Test fun officialPaletteContainsExactlyThirtyUniqueKeys() {
@@ -74,10 +75,7 @@ class RelayProtocolTest {
     assertEquals(30, OfficialKeycaps.ids.size)
     assertEquals("FAST", OfficialKeycaps.all.first().id)
     assertEquals("APPS", OfficialKeycaps.all.last().id)
-    assertEquals(27, OfficialKeycaps.safe.size)
-    assertEquals(3, OfficialKeycaps.danger.size)
-    assertEquals(setOf("APPR", "REJ", "DEL"), OfficialKeycaps.danger.map { it.id }.toSet())
-    assertTrue(OfficialKeycaps.safe.none { it.id in OfficialKeycaps.dangerIds })
+    assertTrue(setOf("APPR", "REJ", "DEL").all(OfficialKeycaps.ids::contains))
   }
 
   @Test fun parsesThirtyCapabilitiesWithoutUsingSixActionSlotsAsAvailability() {
@@ -87,7 +85,7 @@ class RelayProtocolTest {
     OfficialKeycaps.all.forEach { keycap -> capabilities.put(JSONObject()
       .put("id", keycap.id)
       .put("actionType", if (keycap.id == "MIC") "push-to-talk" else "command")
-      .put("status", "ready").put("danger", keycap.id in OfficialKeycaps.dangerIds)) }
+      .put("status", "ready").put("danger", false)) }
     val message = JSONObject().put("host", JSONObject().put("platform", "win32"))
       .put("snapshot", JSONObject().put("slots", slots)
         .put("layout", JSONObject().put("slots", JSONObject().put("ACT01", JSONObject().put("keycapId", "FAST"))))
@@ -96,7 +94,7 @@ class RelayProtocolTest {
     val parsed = RelayProtocol.parseSnapshot(message, fallback)!!
     assertEquals(30, parsed.availableKeycaps.size)
     assertEquals(30, parsed.keycapCapabilities.size)
-    assertEquals(3, parsed.keycapCapabilities.values.count { it.danger })
+    assertEquals(0, parsed.keycapCapabilities.values.count { it.danger })
     assertEquals("thread-0", parsed.activeThreadKey)
     assertTrue(parsed.approvalPending)
   }

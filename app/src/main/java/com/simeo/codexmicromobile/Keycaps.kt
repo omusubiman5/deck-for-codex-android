@@ -4,16 +4,14 @@ data class KeycapDefinition(
   val id: String,
   val name: String,
   val category: String,
-  val description: String,
-  val holdMillis: Long = 0
+  val description: String
 )
 
 object OfficialKeycaps {
-  val dangerIds = setOf("APPR", "REJ", "DEL")
   val all = listOf(
     KeycapDefinition("FAST", "高速実行", "アクション", "Fast modeを切り替えます。"),
-    KeycapDefinition("APPR", "承認", "アクション", "現在の承認要求を承認します。", 1200),
-    KeycapDefinition("REJ", "拒否", "アクション", "現在の承認要求を拒否します。", 1200),
+    KeycapDefinition("APPR", "承認", "アクション", "現在の承認要求を承認します。"),
+    KeycapDefinition("REJ", "拒否", "アクション", "現在の承認要求を拒否します。"),
     KeycapDefinition("SPLIT", "分岐", "アクション", "現在のtaskを分岐します。"),
     KeycapDefinition("MIC", "マイク", "アクション", "音声入力を開始します。"),
     KeycapDefinition("CODEX", "送信", "アクション", "composerを送信します。"),
@@ -21,7 +19,7 @@ object OfficialKeycaps {
     KeycapDefinition("OAI", "OpenAI", "その他", "OpenAI developer docsを開きます。"),
     KeycapDefinition("TERM", "ターミナル", "開発", "Codex terminalを切り替えます。"),
     KeycapDefinition("DWN", "Markdownコピー", "その他", "会話をMarkdownとしてコピーします。"),
-    KeycapDefinition("DEL", "アーカイブ", "アクション", "現在のtaskをarchiveします。", 1200),
+    KeycapDefinition("DEL", "アーカイブ", "アクション", "現在のtaskをarchiveします。"),
     KeycapDefinition("NEW", "新規task", "アクション", "新しいCodex taskを作成します。"),
     KeycapDefinition("NAV", "ブラウザ", "ナビゲーション", "Codex browser tabを開きます。"),
     KeycapDefinition("MAGIC", "Pin切替", "アクション", "現在のtaskのpinを切り替えます。"),
@@ -44,7 +42,5 @@ object OfficialKeycaps {
   )
 
   val ids = all.mapTo(linkedSetOf()) { it.id }
-  val safe = all.filterNot { it.id in dangerIds }
-  val danger = all.filter { it.id in dangerIds }
   fun find(id: String) = all.firstOrNull { it.id == id }
 }

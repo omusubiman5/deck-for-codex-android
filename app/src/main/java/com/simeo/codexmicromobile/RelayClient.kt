@@ -99,9 +99,6 @@ object CommandFactory {
   fun encoder(act: Int) = JSONObject().put("kind", "encoder").put("act", act)
   fun keycap(keycapId: String) = JSONObject().put("kind", "keycap").put("keycapId", keycapId)
   fun keycapPress(keycapId: String, act: Int) = JSONObject().put("kind", "keycap").put("keycapId", keycapId).put("act", act)
-  fun dangerArm(keycapId: String, threadKey: String) = JSONObject().put("kind", "danger-arm").put("keycapId", keycapId).put("threadKey", threadKey)
-  fun dangerKeycap(keycapId: String, nonce: String, holdMs: Int) = JSONObject().put("kind", "keycap")
-    .put("keycapId", keycapId).put("confirmationNonce", nonce).put("confirmedHoldMs", holdMs)
   fun rateLimitReset() = JSONObject().put("kind", "rate-limit-reset")
   fun environmentAction(slot: Int) = JSONObject().put("kind", "environment-action").put("slot", slot)
   fun newTask() = JSONObject().put("kind", "new-task")
@@ -114,10 +111,8 @@ object CommandFactory {
     "joystick" -> command.optString("direction") in setOf("left", "up", "right", "down") && command.optInt("distance") in 0..1
     "encoder" -> command.optInt("act") in 0..1
     "reasoning" -> command.optString("direction") in setOf("increase", "decrease")
-    "danger-arm" -> command.optString("keycapId") in OfficialKeycaps.dangerIds && command.optString("threadKey").isNotBlank()
     "keycap" -> when (val id = command.optString("keycapId")) {
       "MIC" -> command.has("act") && command.optInt("act") in 0..1
-      in OfficialKeycaps.dangerIds -> command.optString("confirmationNonce").matches(Regex("[A-Za-z0-9-]{20,80}")) && command.optInt("confirmedHoldMs") in 1200..10_000
       in OfficialKeycaps.ids -> !command.has("act") && !command.has("confirmationNonce") && !command.has("confirmedHoldMs")
       else -> false
     }
@@ -130,7 +125,7 @@ object CommandFactory {
 }
 
 object RelayProtocol {
-  const val VERSION = 1
+  const val VERSION = 2
   const val MAX_MESSAGE_BYTES = 64 * 1024
 
   fun parseHealth(message: JSONObject): Pair<String, String> {
