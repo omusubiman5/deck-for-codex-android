@@ -1,0 +1,9 @@
+/.gradle/
+/.kotlin/
+/local.properties
+/**/build/
+*.iml
+/docs/assets/codex-ui.xml
+/docs/assets/codex-micro-control.png
+/docs/assets/android-pixel-9a.png
+/docs/assets/diagnostics/
