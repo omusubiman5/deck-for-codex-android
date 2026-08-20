@@ -1,7 +1,12 @@
 # Codex Micro 全機能一覧・実装対象表
 
 作成日: 2026-08-19
-文書版: 1.0（2026-08-20現行）
+文書版: 1.1（2026-08-20現行）
+
+| 文書版 | 日付 | 状態 | 内容 |
+|---|---|---|---|
+| 1.0 | 2026-08-20 | 廃止 | 通常27／Danger 3として分類 |
+| 1.1 | 2026-08-20 | 現行 | 危険分類を撤回し、30キーを同一Paletteへ統合 |
 
 ## 1. この文書の位置付け
 
@@ -9,7 +14,7 @@
 
 - 本文書にある機能は、明記したハードウェア固有機能を除き、すべて実装・試験対象とする。
 - `○`は、Codex Desktopのsnapshot、レイアウト、公式keycap registry、ホスト状態などに応じて、表示名、表示内容、有効状態または実行対象をアプリが動的に変えるボタンを示す。
-- 「現状」は2026-08-20のAndroid 0.2.5／Relay 0.2.7コードと試験結果を再評価した値である。
+- 「現状」は2026-08-20のAndroid 0.2.6／Relay 0.2.8コードと試験結果を再評価した値である。
 - `未実装`と`一部`は受入試験不合格であり、完成扱いにしない。
 
 ## 2. 機能群一覧
@@ -24,7 +29,7 @@
 | CM-05 | Joystick | 上、右、下、左の押下／解放 | 実装済み |
 | CM-06 | Encoder | Reasoningエンコーダの押下／解放 | 実装済み |
 | CM-07 | Reasoning調整 | effort増加／減少、長押し反復 | 実装済み |
-| CM-08 | 公式Keycap | 通常27／Danger 3、registry capability、MIC、nonce | 実装済み・全件実機試験未完了 |
+| CM-08 | 公式Keycap | 同一Palette 30、registry capability、MIC down/up | 実装済み・全件実機試験未完了 |
 | CM-09 | 新規タスク | Codexのネイティブ新規タスク作成 | 実装済み・隔離実機試験未完了 |
 | CM-10 | Usage Limit | 自動、5時間、週次、other、使用率、残量、期間、reset時刻 | 実装済み |
 | CM-11 | Usage Overview | 複数usage windowの同時表示 | 実装済み |
@@ -68,7 +73,7 @@ Agentボタンの表示優先順位は次のとおりとする。
 - ○ `ACT10_ACT11`（既定: `MIC`）
 - ○ `ACT12`（既定: `CODEX`）
 
-動的slotへ`APPR`／`REJ`／`DEL`のいずれかが割り当てられた場合は直接実行せず、Danger警告と専用画面へ誘導する。
+動的slotへ`APPR`／`REJ`／`DEL`が割り当てられた場合も、他のslotと同じdown／up操作を実行する。
 
 ここは名称固定のマクロボタンではない。Codex側で割当が変われば、表示、アイコン、有効状態、実行内容を同じslotの最新snapshotへ追従させる。
 
@@ -84,10 +89,10 @@ Agentボタンの表示優先順位は次のとおりとする。
 
 Reasoning Decrease／Increaseは、押下直後に1回送り、500 ms後から300 ms間隔で長押し反復する。
 
-### 3.4 公式Keycap 30種（通常27／Danger 3）
+### 3.4 公式Keycap 30種（同一Palette）
 
 次のボタンは公式keycap registryの解決結果により有効状態が変わるため、すべて`○`対象とする。
-次表は全機能inventoryであり、同一画面への配置表ではない。`APPR`／`REJ`／`DEL`はDanger専用画面、それ以外は通常Paletteへ配置する。
+次の30キーを同じPaletteのgrid、検索、カテゴリへ配置する。
 
 | ○ | ID | 表示名 | 実行内容 |
 |---|---|---|---|
@@ -122,7 +127,7 @@ Reasoning Decrease／Increaseは、押下直後に1回送り、500 ms後から30
 | ○ | `UPL` | Add Files | composerへファイルを追加 |
 | ○ | `APPS` | Skills | Codex Skillsを開く |
 
-通常Paletteへは`APPR`、`REJ`、`DEL`を除く27種だけを表示する。危険3種は警告経由のDanger専用画面だけに表示し、stable active thread、承認状態、危険分類、60秒nonce、1.2秒holdを検証する。現在画面で成立しない通常キーは恒久無効化せず、具体的な最終結果を表示する。
+`APPR`、`REJ`、`DEL`を危険分類しない。`APPR`／`REJ`は承認要求がない場合、`DEL`はactive taskがない場合にnative handlerの具体的不成立理由を表示する。`DEL`の実体はtask archiveであり、ファイルやGit履歴を削除しない。現在画面で成立しないキーは恒久無効化しない。
 
 ### 3.5 Usage／リセット
 
@@ -192,12 +197,11 @@ Usageボタンは使用率だけでなく、残量、期間、reset時刻、取�
 AndroidからRelayへ送れるcommandは次の型だけに限定する。
 
 - `agent`: slot、threadKey、act
-- `action`: `ACT06`～`ACT12`、act。ただし危険keycap割当slotは拒否
+- `action`: `ACT06`～`ACT12`、act。割当Keycapによる特別拒否なし
 - `joystick`: up／right／down／left、distance
 - `encoder`: act
 - `reasoning`: increase／decrease
-- `keycap`: 通常ID、MICはact 0／1、危険IDはconfirmation nonceとconfirmedHoldMs
-- `danger-arm`: APPR／REJ／DEL、stable active thread
+- `keycap`: 公式30 ID。MICはact 0／1、それ以外はactなし
 - `new-task`
 - `environment-action`: 1／2／3
 - `host-target`: Windows／Macまたはstable host ID

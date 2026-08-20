@@ -1,10 +1,10 @@
 # Codex Micro Mobile / PC Relay 実装報告書
 
 作成日: 2026-08-20
-文書版: 3.2
-対象計画書: `docs/IMPLEMENTATION_PLAN.md` 文書版2.2
-Android版: 0.2.5（versionCode 7）
-Relay版: 0.2.7
+文書版: 3.3
+対象計画書: `docs/IMPLEMENTATION_PLAN.md` 文書版2.3／`docs/PALETTE_30_KEY_RESTORE_IMPLEMENTATION_PLAN.md` 文書版1.0
+Android版: 0.2.6（versionCode 8）
+Relay版: 0.2.8
 
 ## 1. 文書改訂履歴
 
@@ -24,15 +24,16 @@ Relay版: 0.2.7
 | 2.9 | 2026-08-20 | 廃止 | 6キー制限を修正し、通常27／Danger 3、MIC down/up、nonceを実装 |
 | 3.0 | 2026-08-20 | 廃止 | README鬼レビューでAction迂回と画面外holdを修正、主要文書を整合 |
 | 3.1 | 2026-08-20 | 廃止 | Pixel再接続後に安全追補APK、境界外cancel、5分安定稼働を実機確認 |
-| 3.2 | 2026-08-20 | 現行 | 通常27 handler、DEL、nonce live異常系、後続Relay不具合を修正・検証 |
+| 3.2 | 2026-08-20 | 廃止 | 通常27 handler、DEL、nonce live異常系、後続Relay不具合を修正・検証 |
+| 3.3 | 2026-08-20 | 現行 | 危険分類の過剰設計を撤回し、同一Palette 30キー、Protocol 2、通常commandへ復帰 |
 
 計画書の対象版、Android版、Relay版を必ず記録する。実装内容、試験範囲または判定を変更した場合は文書版を上げ、過去版の判定を上書きせず履歴へ残す。
 
 ## 2. 結論
 
-文書版2.8でPaletteを「公式30キー実装済み」とした判定は撤回する。Relay 0.2.6が6 Action slotの割当だけを`availableKeycaps`として返し、Pixelでは上段相当6キー以外が無効だった。Android 0.2.5／Relay 0.2.7で通常27キーとDanger 3キーを分離し、live registry由来の30 capabilityへ修正した。原因は`PALETTE_KEYCAP_AVAILABILITY_ROOT_CAUSE.md`、修正と実測は`PALETTE_KEYCAP_AVAILABILITY_FIX_REPORT.md`を正とする。
+`APPR`、`REJ`、`DEL`を一律に危険操作とした文書版2.9～3.2の設計判断を撤回した。状態変更と危険性を混同しており、`REJ`は実行を止める操作、`DEL`はtask archiveであってファイルやGit履歴を削除しない。`APPR`は承認対象の内容に依存するが、Keycap自体を危険分類する根拠にはならない。
 
-自動試験とPixelの27キー表示・全ボタンenabled、危険3キー非混在、APPS実行、MIC down/up、危険tap／短時間hold／境界外move 0実行、5分安定稼働に加え、通常27 handler応答、DEL正規実行、nonce live異常系を確認した。ただしAPPR／REJの実承認画面実行とWi-Fi復帰後の実画面確認は条件未成立である。このため本修正の総合判定は受入保留であり、未実施をPASSへ読み替えない。
+Android 0.2.6／Relay 0.2.8／Protocol 2で、公式30キーを同一Paletteへ戻し、Danger画面、長押し、confirmation nonce、動的Action拒否を削除した。Pixel UI dumpでは30件すべて表示・enabled、APPR／REJ／DELの通常配置、Danger表示0件、ready／fresh、crash／ANR 0を確認した。実装は完了したが、現在の実承認要求が0件でAPPR／REJの成立結果を確認できず、作業中task保護のためDELの0.2.8実機tapを行っていない。この2条件は受入保留として残す。
 
 実装計画書2.0に対応するAndroid 4主要画面、公式Keycap 30、全操作command、Usage／Reset、Hosts、Windows PC管理UI、PCアプリ内QRを実装した。
 
@@ -65,20 +66,19 @@ Pixelへ0.2.4を導入し、4画面、QR、Wi-Fi WSS、fresh snapshot、主要�
 - Reasoning bottom sheetへEncoder Press、MIND-、MIND+を実装した。
 - Reasoning長押しは500ms後から300ms間隔で反復し、cancel／切断時に停止する。
 - snapshot受信による再描画の前後で画面別scroll位置を保存し、下段コントロールへの到達を維持する。
-- APPR／REJ／DELが割り当てられた動的Actionは`Danger画面`と表示し、generic Actionを送らず警告dialogへ誘導する。
+- APPR／REJ／DELが割り当てられた動的Actionも他slotと同じdown／upを送信する。
 
-### 3.2 通常Palette／Danger
+### 3.2 公式Palette 30
 
-- 通常Palette 27件を5列グリッドで実装し、危険3件をgrid／検索／カテゴリから除外した。
-- APPR／REJ／DELだけのDanger専用画面を実装した。
-- ID、名称、カテゴリ、説明、危険分類、1.2秒holdを一つの定義へ集約した。
+- 公式30件を5列グリッド、検索、カテゴリへ統合した。
+- APPR／REJ／DELを通常tapとし、Danger専用画面を削除した。
+- ID、名称、カテゴリ、説明を一つの定義へ集約した。
 - すべて／アクション／ナビゲーション／開発／その他のカテゴリを実装した。
 - ID、名称、説明の検索を実装した。
 - 選択中keyの説明、互換性、実行可否を表示する。
 - Relay snapshotへlive registry由来の30 `keycapCapabilities`を追加した。
-- Dangerはstable active thread、承認状態、60秒nonce、1.2秒holdを検証する。
-- pointerがview境界外へ移動した場合はhold callbackをcancelする。
-- Relayは危険keycap割当slotのgeneric `action`を拒否し、nonce迂回を防ぐ。
+- MICだけはdown／up／cancelでPush-to-talkを制御する。
+- Relayは30 Keycapを通常commandとして扱い、現在画面で不成立の場合はキーID付き理由を返す。
 
 ### 3.3 Usage
 
@@ -249,7 +249,7 @@ ZXingの旧Activity APIについてdeprecated warningが5件あるが、compile�
 | A UI foundation | 完了 | build／Lint成功 | Pixel 4画面確認済み |
 | B Snapshot完全化 | 完了 | parser／Relay check成功 | live fields／fresh確認済み |
 | C Control | 完了 | build／command test成功 | 主要操作確認済み |
-| D Palette／Danger | 実装済み（受入保留） | 30 capability、通常27／Danger 3、MIC、nonce、Action guard、APPR／REJ統合経路成功 | 27全handler応答、DEL正規実行、nonce異常系確認。APPR／REJ実承認画面は条件未成立 |
+| D Palette 30 | 実装完了（条件付き受入） | 30 capability、danger 0、MIC、APPR／REJ／DEL通常経路、旧nonce拒否 | Pixelで30表示・全enabled・Danger 0。APPR／REJは不成立理由確認、DEL実機tapは未実施 |
 | E Usage | 完了 | parser／hold実装確認 | live usage／Reset長押し表示確認済み |
 | F Hosts／Pairing／Settings | 完了 | profile／QR test成功 | 登録host、QR scanner確認済み |
 | Relay／PC UI | 完了 | test／package audit成功 | Windows概要／QR目視成功 |
@@ -265,7 +265,7 @@ ZXingの旧Activity APIについてdeprecated warningが5件あるが、compile�
 
 ## 10. リリース判定
 
-文書版2.8のAndroid 0.2.4／Relay 0.2.6合格判定は、Palette 6キー制限を見逃したため無効である。現行0.2.5／0.2.7は通常27／Danger 3を実装し、画面外cancel、5分安定稼働、27全handler応答、DEL正規実行、nonce live異常系を確認した。APPR／REJ実承認画面とWi-Fi復帰画面が条件未成立のため受入保留とする。
+文書版2.8のAndroid 0.2.4／Relay 0.2.6合格判定は、Palette 6キー制限を見逃したため無効である。現行0.2.6／0.2.8は30キーを同一Paletteへ統合し、30 capability、danger 0、30ボタン全enabled、旧danger-arm／nonce拒否、APPR／REJの具体的不成立理由を確認した。実承認要求でのAPPR／REJ成立、破棄可能taskでのDEL実機tap、Wi-Fi復帰画面、署名配布、Mac実機は未完了のため製品全体は受入保留とする。
 
 全製品計画はWindows管理UIの一部再試験、明示起動予約の実動作、破棄可能なtaskでの変更操作、署名配布、Mac実機が残るため受入保留とした。当時の正本は`TEST_PLAN.md`／`TEST_REPORT.md`文書版1.6であり、現行正本ではない。
 
@@ -309,4 +309,61 @@ Danger画面ではDEL内から境界外へ1.5秒swipeし、Relayのkeycap／acti
 
 DangerはDELを一時taskとSPLIT forkだけに正規nonceで実行し、archive後のactive task除外とnonce再利用拒否を確認した。nonceなし、キー違い、期限切れ、切断後、task変更後、再利用をlive WSSで全件拒否した。APPR／REJはapprovalPending=trueのRelay統合試験で各1回だけnative controlへ到達することを確認したが、現在のCodex実承認要求が0件なので実画面正規実行はBLOCKEDである。
 
-作成した一時taskとforkはすべてarchiveし、既存taskへ変更を加えていない。実測文書commitは`3998c35`である。現行正本は実装計画2.2、テスト計画1.8、テスト結果2.0、原因調査1.1、Palette対応報告1.3である。PixelはUSB／ADBとWSSの両方から消えており、Wi-Fi復帰実画面だけは再接続後に実施する。
+作成した一時taskとforkはすべてarchiveし、既存taskへ変更を加えていない。実測文書commitは`3998c35`である。これは当時の実装計画2.2、テスト計画1.8、テスト結果2.0、原因調査1.1、Palette対応報告1.3の履歴であり、現行正本ではない。
+
+## 15. 文書版3.3 Palette 30キー復帰
+
+### 15.1 実装
+
+- Androidの`Screen.DANGER`、Danger UI、警告dialog、hold処理、nonce state、危険Action分岐を削除した。
+- `OfficialKeycaps.all`の30件を同じgrid、検索、カテゴリへ表示した。
+- APPR／REJ／DELを通常`kind:keycap` tapとしてallowlistへ戻した。MICだけはact 0／1を維持した。
+- Relayの`danger-arm`、confirmation map、60秒期限、task束縛、Action slot guardを削除した。
+- Protocolを2へ上げ、旧danger-armとnonce／confirmedHoldMs付きcommandを拒否した。
+- capabilityの後方互換`danger`フィールドは残し、30件すべて`false`とした。
+- Android commit: `bb24ba46caf125aa886c66582be60bf94497300b`
+- Relay commit: `7917c32f7f04631d7c0ef0a4e07705c901918f00`
+
+### 15.2 自動試験・build
+
+| 試験 | 結果 |
+|---|---|
+| Android unit test | PASS |
+| Android Lint | PASS |
+| Android Debug／Release build | PASS、90 tasks |
+| Relay unit test | PASS、13件 |
+| Relay TypeScript check／build | PASS |
+| Relay Windows package | PASS、1450 files |
+| npm audit | PASS、脆弱性0 |
+| live Protocol 2 contract | PASS、旧danger-arm／nonce要求を拒否 |
+
+### 15.3 Windows／Pixel実測
+
+| 項目 | 結果 |
+|---|---|
+| Pixel導入版 | 0.2.6 / versionCode 8 |
+| Windows導入版 | Relay 0.2.8、設定portでLISTEN |
+| Android接続 | `ready`／`fresh (0s)` |
+| Paletteタイトル | `公式 Keycap 30` |
+| Keycap表示 | 30／30件 |
+| enabled | 30／30件 |
+| APPR／REJ／DEL | 通常Palette内、各1件、enabled |
+| Danger UI | 0件 |
+| live capability | 30件、danger=true 0件 |
+| APPR通常tap | Relay受信、9msで`APPR: The current Codex view cannot execute this keycap.` |
+| REJ通常tap | Relay受信、13msで`REJ: The current Codex view cannot execute this keycap.` |
+| crash／ANR | 0件 |
+
+APPR／REJ試験時のsnapshotは`approvalPending=false`であり、実行成立をPASSとはしていない。DELは現在の作業taskをarchiveしないためPixel実機tapを行わず、Relay統合試験でAPPR／REJ／DEL各1回が通常native controlへ到達することを確認した。破棄可能taskを用意したDEL実機試験は未完了である。
+
+### 15.4 成果物
+
+| 成果物 | SHA-256 |
+|---|---|
+| debug APK | `3F6988A35C8079F8E78AF1BA8008B9285998D9F0FFF43B8477E7397F47CAA085` |
+| unsigned release APK | `EC4C56C89197B3036FC84DAE5BCBA7DFAE935709D8A0976288C6CCB25BA43274` |
+| Windows Relay ZIP | `8D0BDE87BC4285AE263390CB3032797FBAC16EF07C61868F9BBAD5FC2983B4CD` |
+
+### 15.5 判定
+
+30キー復帰実装とProtocol 2の自動試験、Windows／Pixel導入、30件表示・enabled確認は**合格**。実承認要求でのAPPR／REJ成立、破棄可能taskでのDEL実機tap、Wi-Fi復帰、Mac実機、署名済みreleaseは**未完了**であり、製品全体の最終判定は受入保留とする。

@@ -1,10 +1,10 @@
 # Palette Keycap Availability 対応報告書
 
 作成日: 2026-08-20  
-文書版: 1.3
-原因調査書: `docs/PALETTE_KEYCAP_AVAILABILITY_ROOT_CAUSE.md` 文書版1.1
-修正版Android: 0.2.5（versionCode 7）  
-修正版Relay: 0.2.7
+文書版: 1.4
+原因調査書: `docs/PALETTE_KEYCAP_AVAILABILITY_ROOT_CAUSE.md` 文書版1.2
+修正版Android: 0.2.6（versionCode 8）
+修正版Relay: 0.2.8／Protocol 2
 
 ## 1. 文書改訂履歴
 
@@ -13,9 +13,14 @@
 | 1.0 | 2026-08-20 | 廃止 | 通常27／Danger 3、30 capability、MIC、nonce修正と実測を記録 |
 | 1.1 | 2026-08-20 | 廃止 | README鬼レビューでAction迂回と境界外holdを追加修正 |
 | 1.2 | 2026-08-20 | 廃止 | Pixel再接続後に安全追補APK、境界外cancel、5分安定稼働を実機確認 |
-| 1.3 | 2026-08-20 | 現行 | 通常27 handler、DEL、nonce live異常系と後続Relay修正を記録 |
+| 1.3 | 2026-08-20 | 廃止 | 通常27 handler、DEL、nonce live異常系と後続Relay修正を記録 |
+| 1.4 | 2026-08-20 | 現行 | 危険分類を撤回し、同一Palette 30キーと通常commandへ復帰 |
 
-## 2. 修正内容
+## 1.1 現行訂正
+
+1.0～1.3の通常27／Danger 3は、状態変更を危険性と混同した過剰設計だったため撤回した。0.2.6／0.2.8では30キーを同じPaletteへ表示し、APPR／REJ／DELを通常tap、動的Actionを通常down／upへ戻した。Danger画面、長押し、confirmation nonce、Action拒否は削除した。実装・試験・成果物は`IMPLEMENTATION_REPORT.md`文書版3.3と`TEST_REPORT.md`文書版2.1を正とする。
+
+## 2. 文書版1.3までの修正内容（履歴）
 
 - Relayの`availableKeycaps`を6 Action slot由来から、既知の`codex-micro-layout-*` live registry由来へ変更した。
 - 不特定lazy moduleを実行せず、公式30 IDを解決する。

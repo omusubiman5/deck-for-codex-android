@@ -1,10 +1,10 @@
 # Codex Micro Mobile / PC Relay テスト計画書
 
 作成日: 2026-08-20
-文書版: 1.8
-対象実装計画書: `docs/IMPLEMENTATION_PLAN.md` 文書版2.2
-対象Android版: 0.2.5（versionCode 7）
-対象Relay版: 0.2.7
+文書版: 1.9
+対象実装計画書: `docs/IMPLEMENTATION_PLAN.md` 文書版2.3
+対象Android版: 0.2.6（versionCode 8）
+対象Relay版: 0.2.8／Protocol 2
 
 ## 1. 文書改訂履歴
 
@@ -18,7 +18,8 @@
 | 1.5 | 2026-08-20 | 廃止 | Codex bridgeなしRelay起動とAndroid接続状態分離を追加 |
 | 1.6 | 2026-08-20 | 廃止 | 物理画面表示・4画面操作・機能readinessを必須化 |
 | 1.7 | 2026-08-20 | 廃止 | 通常27／Danger 3、30 capability、MIC、nonce、隔離実行を必須化 |
-| 1.8 | 2026-08-20 | 現行 | README鬼レビューでAction迂回拒否と画面外cancel試験を追加 |
+| 1.8 | 2026-08-20 | 廃止 | README鬼レビューでAction迂回拒否と画面外cancel試験を追加 |
+| 1.9 | 2026-08-20 | 現行 | 危険分類を撤回し、同一Palette 30キーとProtocol 2の試験へ変更 |
 
 本書の試験範囲、合否条件、対象版を変更する場合は文書版を上げ、改訂履歴へ追記する。試験結果は同じ対象版を明記した`docs/TEST_REPORT.md`へ記録する。
 
@@ -35,12 +36,12 @@
 - Pixel 9aへ対象版を導入し、Control／Palette／Usage／Hostsの4画面を表示・操作できる。
 - `adb reverse`を使用せず、PixelとWindowsが同一LANのWSSで接続できる。
 - QRスキャナー起動時にAndroidX Core欠落クラッシュが再発しない。
-- 危険操作は長押し確認を必要とし、Relayは許可リスト外commandを拒否する。
-- Action slotが6件以下でもcapability 30件、通常Palette 27件、Danger 3件である。
-- 通常Paletteの検索／カテゴリ／UI dumpに危険3キーが0件である。
+- Action slotが6件以下でもcapabilityとPaletteが30件、danger=trueが0件である。
+- Paletteの検索／カテゴリ／UI dumpにAPPR／REJ／DELを含む30キーが存在する。
 - MICのdown／up／cancel／切断stopを別々に確認する。
-- Dangerは通常tap、短時間hold、pointer cancel、nonceなし、期限切れ、task変更、nonce再利用で実行0件とする。
-- 正規危険操作は一時Git領域と専用taskだけで行い、既存taskやrepositoryを対象にしない。
+- APPR／REJ／DELは通常tap command、動的Action slotも通常down／upである。
+- 旧danger-arm、confirmationNonce、confirmedHoldMs付きcommandを拒否する。
+- DEL実機試験は専用の破棄可能taskだけを対象とし、既存taskやrepositoryを対象にしない。
 
 ## 2.1 30キー実機マトリクス
 
@@ -131,10 +132,10 @@ FAILまたはBLOCKEDが1件でも残る場合、総合判定を「合格」に�
 
 | ID | 試験 | 期待結果 |
 |---|---|---|
-| E-01 | `adb devices`、導入済み版照合 | Pixelがdevice、0.2.5 / 7 |
+| E-01 | `adb devices`、導入済み版照合 | Pixelがdevice、0.2.6 / 8 |
 | E-02 | MainActivity起動 | crashせずControl表示 |
 | E-03 | Control | Agents 6、Actions 6、Joystick、Encoder、Reasoning表示 |
-| E-04 | Palette／Danger | 通常27キー全enabled、危険3キー0件、警告経由でDanger 3件 |
+| E-04 | Palette 30 | 30キー全表示・enabled、APPR／REJ／DEL各1件、Danger UI 0件 |
 | E-05 | Usage | usage mode、windows、reset UI表示 |
 | E-06 | Hosts | host一覧、target、設定、pairingへ到達 |
 | E-07 | QRスキャナー起動 | scanner表示、`ContextCompat`例外なし |
@@ -155,13 +156,13 @@ FAILまたはBLOCKEDが1件でも残る場合、総合判定を「合格」に�
 | F-05 | Joystick 4方向 | 4方向すべてcommand到達 |
 | F-06 | Encoder／Reasoning | press/repeat/releaseが到達 |
 | F-07 | 通常Keycap | 安全なキーでcommand到達 |
-| F-08 | APPR／REJ／DEL | tap／短hold／release／cancel／境界外移動で0件、1.2秒＋有効nonceだけ1件 |
-| F-08A | 危険Action迂回 | ControlのAPPR／REJはDangerへ誘導し、直接WSS actionもRelay拒否 |
+| F-08 | APPR／REJ／DEL | 通常tapでRelay／native handlerへ到達し、成立または具体的不成立理由を返す |
+| F-08A | 動的Action | APPR／REJ／DEL割当slotも通常down／upをRelayが受理する |
 | F-08B | Rate Limit Reset | Usageでavailable／applicable時だけ1.2秒hold |
 | F-09 | host target／new task／environment action | UI経由で許可commandとして到達 |
 | F-10 | Wi-Fi再接続 | 切断表示後、自動または手動で再接続しfreshへ復帰 |
 
-実タスクを承認、拒否、削除、リセットする危険操作は、確認UIまでを必須試験とする。実行は専用の破棄可能な状態が確認できた場合だけ行う。
+APPR／REJは実承認要求がある場合だけ成立結果を確認する。DELはtask archiveであり、専用の破棄可能taskが確認できた場合だけ実行する。Rate Limit Resetは従来どおりUsage画面の確認UIを試験する。
 
 ## 6. 試験手順と証跡
 

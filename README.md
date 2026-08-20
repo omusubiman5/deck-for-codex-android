@@ -6,10 +6,10 @@ Android端末から、Windows／macOS上のCodex DesktopをCodex Micro Relay経�
 
 | コンポーネント | 対象版 | 検証状態 |
 |---|---|---|
-| Android | 0.2.5（versionCode 7） | Pixel 9aで部分検証、総合受入保留 |
-| Windows Relay | 0.2.7 | Windows実機へ導入・接続検証済み |
-| macOS Relay | 0.2.7 | package／launcher検査のみ、Mac実機未検証 |
-| Protocol | 1 | Android／Windows間で検証 |
+| Android | 0.2.6（versionCode 8） | Pixel 9aへ導入、30キー実画面確認済み |
+| Windows Relay | 0.2.8 | Windowsへ導入・Protocol 2接続確認済み |
+| macOS Relay | 0.2.8 | package／launcher検査のみ、Mac実機未検証 |
+| Protocol | 2 | 30キー統合契約 |
 
 このGitプロジェクトは`codex-deck-m18`から独立しており、M18／Stream Deckの制御コードを含みません。
 
@@ -18,7 +18,7 @@ Android端末から、Windows／macOS上のCodex DesktopをCodex Micro Relay経�
 - Control／Palette／Usage／Hostsの4画面
 - Codex Microの6 Agent表示とtask切替
 - 6つの動的Micro Action、Joystick 4方向、Encoder、Reasoning
-- 公式Keycap 30機能：通常Palette 27キー＋Danger専用画面3キー
+- 公式Keycap 30機能を同一Paletteで表示・操作
 - Usage window表示とRate Limit Reset
 - Windows／Macプロファイルを最大8件保存・切替
 - PCアプリ内QR、Androidアプリ内カメラ、Nearby WSS接続
@@ -40,53 +40,30 @@ AndroidとPCが同一L2セグメントであること自体は必須ではあり
 
 USBはAPK導入、ADB試験、ログ／UI dump取得にだけ使用します。製品通信はWi-Fi／LAN WSSであり、USBを挿したままにする必要はありません。`adb reverse`にも依存しません。
 
-## 通常Palette：27キー
+## 公式Palette：30キー
 
-通常Paletteには次の27キーだけを表示します。
+30キーを同じgrid、検索、カテゴリへ表示します。
 
 | 行 | Keycap |
 |---:|---|
-| 1 | `FAST`、`SPLIT`、`MIC`、`CODEX`、`BUG` |
-| 2 | `OAI`、`TERM`、`DWN`、`NEW`、`NAV` |
-| 3 | `MAGIC`、`DIFF`、`PLAY`、`GIT`、`BRCH` |
-| 4 | `MRG`、`PR`、`PAINT`、`LAB`、`PARTY` |
-| 5 | `TIME`、`MIND+`、`MIND-`、`SETUP`、`FOLD` |
-| 6 | `UPL`、`APPS` |
+| 1 | `FAST`、`APPR`、`REJ`、`SPLIT`、`MIC` |
+| 2 | `CODEX`、`BUG`、`OAI`、`TERM`、`DWN` |
+| 3 | `DEL`、`NEW`、`NAV`、`MAGIC`、`DIFF` |
+| 4 | `PLAY`、`GIT`、`BRCH`、`MRG`、`PR` |
+| 5 | `PAINT`、`LAB`、`PARTY`、`TIME`、`MIND+` |
+| 6 | `MIND-`、`SETUP`、`FOLD`、`UPL`、`APPS` |
 
-`APPR`、`REJ`、`DEL`は通常Paletteのgrid、検索結果、カテゴリ件数へ出しません。Relayの危険分類とAndroid内蔵定義が一致しない場合も実行できません。
+`APPR`、`REJ`、`DEL`は危険キーではなく、他のKeycapと同じ通常tapで実行します。`APPR`と`REJ`は現在の承認要求がある場合に成立します。`DEL`の実体はtaskのarchiveであり、ファイル、repository、Git履歴を削除しません。
 
 通常キーがlive registryで解決済みでも、現在のCodex画面、選択task、repository、composer、承認状態などの条件により成立しないことがあります。この場合はキーを恒久無効化せず、最終実行結果へ不成立理由を残します。
 
 `MIC`は通常tap commandではありません。「押している間」だけPush-to-talkを開始し、指を離す、pointer cancel、画面離脱、Activity停止、通信切断でstopします。
 
-## Danger専用画面：3キー
-
-3キー共通で、Relay capabilityが`ready`、Android／Relayの危険分類が一致し、60秒以内の未使用nonceが必要です。
-
-| Keycap | 影響 | 使用条件 |
-|---|---|---|
-| `APPR` | 現在の承認要求を承認 | `ready / fresh`、active taskとstable thread IDあり、現在taskに承認要求あり |
-| `REJ` | 現在の承認要求を拒否 | `ready / fresh`、active taskとstable thread IDあり、現在taskに承認要求あり |
-| `DEL` | 現在のtaskをarchive | `ready / fresh`、archive対象のactive taskとstable thread IDあり |
-
-操作手順:
-
-1. Control左上のグローバルメニューから`⚠ 危険操作`を選ぶ。
-2. 警告を読み、`Danger画面を開く`を明示的に選ぶ。
-3. 画面上部のtask／project／host／threadを確認する。
-4. 対象ボタンを1.2秒連続長押しする。
-5. 成功／拒否／不成立理由を画面内で確認する。
-6. `DEL`成功時はControlへ戻り、archiveされたtaskがAgent slotから外れたことを確認する。
-
-通常tap、1.2秒未満のhold、途中release、pointer cancel、画面外移動、Activity停止、通信切断では実行しません。RelayはDanger画面を開いた後に発行したconfirmation nonceを要求します。nonceの有効期限は60秒で、host、WebSocket接続、Keycap、active threadへ束縛され、一度使用、期限切れ、task変更、切断後は再利用できません。
-
-Controlの動的Micro Actionへ`APPR`／`REJ`／`DEL`のいずれかが割り当てられている場合も、そのボタンから直接実行せずDanger画面へ誘導します。Relayもgeneric Action経路による危険キー実行を拒否します。
-
-Rate Limit ResetはDanger画面には置かず、Usage画面で適用条件を再確認したうえで1.2秒長押しします。
+Rate Limit Resetは30 Keycapとは別にUsage画面へ置き、適用条件を再確認したうえで1.2秒長押しします。
 
 ## Windows／Android導入とNearbyペアリング
 
-1. Relay repositoryで`npm run package:windows`を実行し、`release/codex-micro-relay-windows-x64.zip`を生成／展開する。
+1. [Deck for Codex Relay](https://github.com/omusubiman5/deck-for-codex-relay)で`npm run package:windows`を実行し、`release/codex-micro-relay-windows-x64.zip`を生成／展開する。
 2. 展開先の`Install Codex Micro Relay.cmd`を実行する。Relayは`%LOCALAPPDATA%\CodexMicroRelay\app`へ導入される。
 3. Start Menuの「Codex Micro Relay」から管理UIを開き、Relay／Codex bridge／LAN状態を確認する。
 4. 開発用Android APKは`adb install -r app/build/outputs/apk/debug/app-debug.apk`で上書き導入する。
@@ -116,17 +93,18 @@ debug APKは`app/build/outputs/apk/debug/app-debug.apk`、unsigned release APK�
 
 ## 現在の検証状態
 
-Android自動試験、Debug／Release build、Lint、Relay試験／型検査／package／audit、Pixelへの安全追補APK導入、通常27キー表示・全enabled、通常27キーのRelay／native handler応答、危険3キー非混在、Danger導線、短時間hold／画面外移動 0実行、DEL正規nonce実行、nonce live異常系、APPS、MIC down/up、5分安定稼働は確認済みです。通常27キーはprojectless一時taskで18件が実行成功、リポジトリ等を必要とする9件がキーID付きの具体的不成立理由を返しました。
+30キー統合版のAndroid test／Lint／Debug／Release build、Relay 13 unit test／TypeScript／package／audit、Windows／Pixel再導入を確認済みです。Pixel UI dumpでは30件すべて表示・enabled、APPR／REJ／DELの通常配置、Danger表示0件、crash／ANR 0でした。
 
 次は未完了のため、製品全体を最終合格とはしていません。
 
-- 実承認要求を使ったAPPR／REJ正規実行（Relay統合試験は各1回PASS、現在の実承認要求は0件）
+- 実承認要求を使ったAPPR／REJのPixel実画面実行（現在の実承認要求は0件）
 - Wi-Fi復帰後のPixel実画面確認
 - macOS実機試験、署名済みrelease
 
 ## 関連文書
 
 - [実装計画書](docs/IMPLEMENTATION_PLAN.md)
+- [Palette 30キー復帰実装計画書](docs/PALETTE_30_KEY_RESTORE_IMPLEMENTATION_PLAN.md)
 - [実装報告書](docs/IMPLEMENTATION_REPORT.md)
 - [テスト計画書](docs/TEST_PLAN.md)
 - [テスト結果報告書](docs/TEST_REPORT.md)

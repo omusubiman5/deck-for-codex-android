@@ -1,11 +1,11 @@
 # Codex Micro Mobile / PC Relay テスト結果報告書
 
 作成日: 2026-08-20
-文書版: 2.0
-対象テスト計画書: `docs/TEST_PLAN.md` 文書版1.8
-対象実装計画書: `docs/IMPLEMENTATION_PLAN.md` 文書版2.2
-対象Android版: 0.2.5（versionCode 7）
-対象Relay版: 0.2.7
+文書版: 2.1
+対象テスト計画書: `docs/TEST_PLAN.md` 文書版1.9
+対象実装計画書: `docs/IMPLEMENTATION_PLAN.md` 文書版2.3
+対象Android版: 0.2.6（versionCode 8）
+対象Relay版: 0.2.8／Protocol 2
 
 ## 1. 文書改訂履歴
 
@@ -17,17 +17,35 @@
 | 1.7 | 2026-08-20 | 廃止 | 6キー見逃しを訂正し、27／3分離と実機再試験を記録 |
 | 1.8 | 2026-08-20 | 廃止 | README鬼レビューで検出した危険Action迂回と境界外holdを修正・再判定 |
 | 1.9 | 2026-08-20 | 廃止 | Pixel再接続後に安全追補APK、境界外cancel、5分安定稼働を実機確認 |
-| 2.0 | 2026-08-20 | 現行 | 通常27 handler、DEL正規実行、nonce live異常系、後続Relay不具合修正を記録 |
+| 2.0 | 2026-08-20 | 廃止 | 通常27 handler、DEL正規実行、nonce live異常系、後続Relay不具合修正を記録 |
+| 2.1 | 2026-08-20 | 現行 | 危険分類撤回、Palette 30、Protocol 2、Windows／Pixel再導入結果を記録 |
 
 ## 2. 判定
 
 **Android実機受入: 受入保留**
-**Palette修正: 部分合格（FAIL 0、BLOCKED 2）**
+**Palette 30復帰: 合格（条件未成立2件を除く）**
 **計画全体: 受入保留**
 
-文書版1.6のPalette関連PASSは無効である。30キーのラベル表示とFASTだけを確認し、24キーがdisabledだった事実を検出できなかった。2.0ではUI dump上の通常27キー全件とenabled状態、危険3キー0件、27 handler応答、DEL、nonce異常系を確認した。APPR／REJ実承認画面とWi-Fi復帰画面が条件未成立なので総合合格にはしない。
+2.1ではAndroid 0.2.6／Relay 0.2.8を実導入し、UI dumpをスクロール採取して30キー全件・全enabled、APPR／REJ／DEL各1件、Danger UI 0件を確認した。APPR／REJは承認要求なしの具体的不成立理由まで確認したが、成立条件は未発生。DELは作業中task保護のため実機tapしていない。
 
-### 2.1 文書版2.0の実測
+### 2.1 文書版2.1の実測
+
+| ID | 結果 | 実測／証跡 |
+|---|---|---|
+| N-01 | PASS | Android 0.2.6 / versionCode 8をPixelへ導入 |
+| N-02 | PASS | Relay 0.2.8 / Protocol 2をWindowsへ導入しLISTEN |
+| N-03 | PASS | Android test／Lint／Debug／Release build、90 tasks |
+| N-04 | PASS | Relay 13 unit、TypeScript、build、package 1450 files、audit 0 |
+| N-05 | PASS | live capability 30件、danger=true 0件 |
+| N-06 | PASS | Pixel UI dumpで30件すべて表示・enabled |
+| N-07 | PASS | APPR／REJ／DELが通常Palette内、Danger UI 0件 |
+| N-08 | PASS | 旧danger-arm／nonce fieldsをProtocol 2が拒否 |
+| N-09 | PASS | APPR／REJ通常tapをRelay受信、キーID付き不成立理由 |
+| N-10 | PASS | 実施区間のcrash／ANR 0 |
+| N-11 | BLOCKED | 実承認要求0件のためAPPR／REJ成立試験なし |
+| N-12 | NOT RUN | 破棄可能taskを用意できずDELの0.2.8 Pixel実機tapなし。Relay統合試験はPASS |
+
+### 2.2 文書版2.0の実測（履歴）
 
 | ID | 結果 | 実測／証跡 |
 |---|---|---|

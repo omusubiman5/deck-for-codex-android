@@ -1,7 +1,7 @@
 # Codex Micro Mobile / PC Relay 実装計画書
 
 作成日: 2026-08-19  
-版: 2.2（README／Danger経路整合版）
+版: 2.3（Palette 30キー復帰版）
 
 ### 文書改訂履歴
 
@@ -11,7 +11,8 @@
 | 1.1 | 2026-08-19 | 廃止 | QR／Windows UI／全機能の不足を訂正 |
 | 2.0 | 2026-08-19 | 廃止 | 指定UIを正本にControl／Palette／Usage／Hostsと全機能を統合 |
 | 2.1 | 2026-08-20 | 廃止 | 通常Palette 27キー、Danger 3キー、capability／MIC／nonce契約を追加 |
-| 2.2 | 2026-08-20 | 現行 | 旧Palette 30記述を撤廃し、動的Action迂回拒否と画面外cancelを明記 |
+| 2.2 | 2026-08-20 | 廃止 | 旧Palette 30記述を撤廃し、動的Action迂回拒否と画面外cancelを明記 |
+| 2.3 | 2026-08-20 | 現行 | 危険分類の過剰設計を撤回し、公式30キーを同一Paletteへ復帰。詳細は`PALETTE_30_KEY_RESTORE_IMPLEMENTATION_PLAN.md` |
 
 文書版はアプリ版とは独立して管理する。要件、画面、protocol、受入条件を変更する場合は文書版を上げ、改訂履歴へ追記する。
 
@@ -30,18 +31,17 @@ Android UIは、利用者指定の`ChatGPT Image 2026年8月19日 14_45_15.png`�
 - Pixel実機でUSBを外し、`adb reverse`なしで同一LAN WSS接続・操作試験に合格する。
 - 未実装、一部実装、実機未検証の項目を完成と報告しない。
 
-### 1.1 Palette修正の必須条件
+### 1.1 Palette修正の必須条件（文書版2.3）
 
 - Relayは6 Action slotの割当ではなく、既知の`codex-micro-layout-*` live registryから公式30 IDを解決する。
-- 通常Paletteは`APPR`、`REJ`、`DEL`を除いた27キーだけを表示する。
-- 危険3キーはグローバルメニューの警告を経たDanger専用画面だけに表示する。
-- snapshotは`keycapCapabilities`としてID、action型、ready／unsupported、danger分類を返す。
+- 通常Paletteは`APPR`、`REJ`、`DEL`を含む公式30キーを同一grid、検索、カテゴリへ表示する。
+- Danger専用画面、危険分類、長押し、confirmation nonceは使用しない。
+- snapshotは`keycapCapabilities`としてID、action型、ready／unsupportedを返し、後方互換の`danger`は全30件`false`とする。
 - MICは明示的なdown／upでPush-to-talkを開始／停止し、切断時はstopをbest-effort送信する。
-- 危険操作は1.2秒長押しに加え、host、接続、key、active thread、有効期限へ束縛した一回限りnonceをRelayで検証する。
-- AndroidとRelayの危険分類が一致しないキーは実行不可とし、protocol不整合を表示する。
-- 通常タップ、1.2秒未満、pointer cancel、nonceなし、再利用nonceでは危険操作を実行しない。
+- APPR／REJ／DELは他の通常Keycapと同じtap commandとし、現在画面で不成立なら具体的理由を表示する。
+- DELはUIと文書で`アーカイブ`と表現し、削除と誤認させない。
 
-対象版はAndroid 0.2.5（versionCode 7）、Relay 0.2.7とする。
+対象版はAndroid 0.2.6（versionCode 8）、Relay 0.2.8、Protocol 2とする。
 
 ## 2. 対象環境と製品構成
 
@@ -94,7 +94,7 @@ AndroidとRelayは別Gitプロジェクトにする。RelayコアはWindows／ma
 | 順 | 表示 | 画面 |
 |---:|---|---|
 | 1 | Control | メインダッシュボード／制御 |
-| 2 | Palette | 通常27キー（Danger 3キーは警告経由の別画面） |
+| 2 | Palette | 公式30キーを同一画面で表示・操作 |
 | 3 | Usage | 利用状況／制限／Reset |
 | 4 | Hosts | ホスト／設定／状態詳細 |
 
@@ -192,7 +192,7 @@ Control左上のハンバーガーから次へ移動できる。
 
 `ACT01～06`は画面上の連番であり、Relay protocolではnative slot IDを必ず使う。Codex側レイアウト変更時は、表示名、色、アイコン、有効状態、実行commandを再起動なしで同期する。
 
-`APPR`／`REJ`／`DEL`のいずれかが動的slotへ割り当てられた場合、そのslotからgeneric `action` commandを送らずDanger警告へ誘導する。Relayも現在layoutを再確認し、危険keycapが割り当てられたslotのgeneric `action`を拒否する。
+`APPR`／`REJ`／`DEL`が動的slotへ割り当てられた場合も、他のslotと同じgeneric `action` down／upを送る。
 
 ### 4.4 JOYSTICK / REASONING
 
@@ -212,30 +212,30 @@ Reasoningカード:
 - LESS／MOREは押下直後に1回、500ms後から300ms間隔で長押し反復
 - 切断、画面離脱、pointer cancel時は反復を停止
 
-## 5. 画面2: 通常Palette 27／Danger専用画面3
+## 5. 画面2: 公式Palette 30
 
 ### 5.1 App bar／検索／カテゴリ
 
 - 戻る
-- `公式 Keycap 27`
+- `公式 Keycap 30`
 - 検索
 - カテゴリタブ: すべて／アクション／ナビゲーション／開発／その他
 - 件数表示
 
 検索対象はkeycap ID、表示名、日本語名、説明。カテゴリと検索語は同時適用する。
 
-### 5.2 通常Palette 27キー
+### 5.2 公式Palette 30キー
 
-通常Paletteのグリッドには次の27キーだけを表示する。
+Paletteのグリッドには次の30キーを表示する。
 
 | 行 | Keycap |
 |---:|---|
-| 1 | `FAST`、`SPLIT`、`MIC`、`CODEX`、`BUG` |
-| 2 | `OAI`、`TERM`、`DWN`、`NEW`、`NAV` |
-| 3 | `MAGIC`、`DIFF`、`PLAY`、`GIT`、`BRCH` |
-| 4 | `MRG`、`PR`、`PAINT`、`LAB`、`PARTY` |
-| 5 | `TIME`、`MIND+`、`MIND-`、`SETUP`、`FOLD` |
-| 6 | `UPL`、`APPS` |
+| 1 | `FAST`、`APPR`、`REJ`、`SPLIT`、`MIC` |
+| 2 | `CODEX`、`BUG`、`OAI`、`TERM`、`DWN` |
+| 3 | `DEL`、`NEW`、`NAV`、`MAGIC`、`DIFF` |
+| 4 | `PLAY`、`GIT`、`BRCH`、`MRG`、`PR` |
+| 5 | `PAINT`、`LAB`、`PARTY`、`TIME`、`MIND+` |
+| 6 | `MIND-`、`SETUP`、`FOLD`、`UPL`、`APPS` |
 
 各キーは`○`動的ボタンとし、Codex Desktopのlive keycap registryからcapabilityを解決する。現在画面でcommandが成立しない場合も恒久無効化せず、具体的な最終結果を表示する。
 
@@ -252,22 +252,18 @@ Reasoningカード:
 - 説明／用途
 - Windows／Mac互換性
 - availability／無効理由
-- 長押しが必要か
+- 操作方式（MICだけ押下中）
 - 最終command結果
 
 色カテゴリの凡例をグリッド下へ表示するが、色だけで分類しない。
 
-### 5.4 Danger専用画面
+### 5.4 APPR／REJ／DELの意味
 
-`APPR`、`REJ`、`DEL`は通常Paletteのgrid、検索、カテゴリへ混在させない。グローバルメニューの警告dialogで明示的に開いたDanger画面だけに表示する。
+- `APPR`: 現在の承認要求を承認する。承認要求がない場合は不成立理由を表示する。
+- `REJ`: 現在の承認要求を拒否する。危険操作には分類しない。
+- `DEL`: 現在のtaskをarchiveする。ファイル、repository、Git履歴の削除ではない。
 
-| Keycap | 使用条件 |
-|---|---|
-| `APPR` | ready／fresh、stable active thread、承認要求あり、危険分類一致、有効nonce |
-| `REJ` | ready／fresh、stable active thread、承認要求あり、危険分類一致、有効nonce |
-| `DEL` | ready／fresh、stable active thread、危険分類一致、有効nonce |
-
-対象task／project／host／threadを表示し、1.2秒連続長押しだけで実行する。tap、短時間hold、release、pointer cancel、view境界外移動、Activity停止、通信切断では送信しない。nonceは60秒、host／socket／key／thread束縛、一回限りとする。
+3キーとも通常tapで実行し、Danger画面、長押し、confirmation nonceは設けない。
 
 ## 6. 画面3: Usage――利用状況／制限／Reset
 
@@ -442,8 +438,7 @@ Pairing profileはid、display name、host ID、platform、endpoint、mode、fin
 | `joystick` | up／right／down／left、distance |
 | `encoder` | act |
 | `reasoning` | increase／decrease |
-| `keycap` | 通常ID、MICはact、危険IDはnonceとconfirmedHoldMs |
-| `danger-arm` | APPR／REJ／DEL、stable active thread |
+| `keycap` | 公式30 ID。MICはact必須、それ以外はactなし |
 | `new-task` | なし |
 | `environment-action` | 1／2／3 |
 | `host-target` | stable host ID |
@@ -476,9 +471,9 @@ CDPは`127.0.0.1`だけへbindする。Nearby Relayは選択したprivate LAN ad
 
 ### Phase D: Palette
 
-- 通常Palette 27キーとDanger専用画面3キー
+- 同一Paletteの公式30キー
 - 検索、カテゴリ、選択詳細
-- capability、MIC down/up、1.2秒hold、nonce、generic Action迂回拒否
+- capability、MIC down/up、30キー通常command、動的Action
 
 ### Phase E: Usage
 
@@ -510,7 +505,7 @@ macOSは同じ情報設計で実装し、Mac実機試験までは「実機未検
 - Agent 6状態、project／native title fallback
 - UI ACT01～06とnative slot IDの対応
 - Joystick 4方向、Encoder、Reasoning長押し／cancel
-- 通常27、Danger 3、検索非混在、無効理由、MIC、hold cancel
+- 通常30、検索、カテゴリ、無効理由、MIC down/up
 - Usage 4 mode、複数other、reset長押し
 - Host一覧、状態、メニュー、最大8件
 - QR、private IP、fingerprint、protocol mismatch
@@ -535,8 +530,8 @@ macOSは同じ情報設計で実装し、Mac実機試験までは「実機未検
 7. 6動的Micro Actionのlayout変更追従を確認する。
 8. Joystick 4方向を操作する。
 9. Encoder Press、Reasoning増減、長押し反復を確認する。
-10. 通常Paletteの検索、カテゴリ、27キー全件enabledと危険3キー0件を確認する。
-11. 通常27キーとDanger 3キーを隔離状態で試験し、MIC、hold cancel、nonce不正系、generic Action迂回拒否を確認する。
+10. Paletteの検索、カテゴリ、30キー全件表示とenabled状態を確認する。
+11. APPR／REJ／DELの通常tap command、MIC down/up、旧danger-arm／nonce要求拒否を確認する。
 12. Usageの自動、5時間、週次、otherを確認する。
 13. Resetが1.2秒未満で実行されないことを確認する。
 14. Resetのavailable／applicable／成功／失敗を確認する。
@@ -581,7 +576,7 @@ macOSはCI、launcher、LaunchAgent、package監査を通しても、Mac実機�
 - Agent project name、詳細bottom sheet
 - Joystick Down
 - Encoder Press、Reasoning長押し
-- 通常Palette 27／Danger 3、検索、カテゴリ、詳細
+- 公式Palette 30、検索、カテゴリ、詳細
 - Usage mode、全window、Rate Limit Reset
 - Hostsの状態詳細、行メニュー、各種設定
 - Windows PC管理UIとアプリ内QR
