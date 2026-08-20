@@ -1,8 +1,8 @@
 # Codex Micro Mobile / PC Relay 実装報告書
 
 作成日: 2026-08-20
-文書版: 3.4
-対象計画書: `docs/IMPLEMENTATION_PLAN.md` 文書版2.4／`docs/PALETTE_30_KEY_RESTORE_IMPLEMENTATION_PLAN.md` 文書版1.0
+文書版: 3.5
+対象計画書: `docs/IMPLEMENTATION_PLAN.md` 文書版2.5／`docs/PALETTE_30_KEY_RESTORE_IMPLEMENTATION_PLAN.md` 文書版1.0
 Android版: 0.2.6（versionCode 8）
 Relay版: 0.2.8
 
@@ -26,7 +26,8 @@ Relay版: 0.2.8
 | 3.1 | 2026-08-20 | 廃止 | Pixel再接続後に安全追補APK、境界外cancel、5分安定稼働を実機確認 |
 | 3.2 | 2026-08-20 | 廃止 | 通常27 handler、DEL、nonce live異常系、後続Relay不具合を修正・検証 |
 | 3.3 | 2026-08-20 | 廃止 | 危険分類の過剰設計を撤回し、同一Palette 30キー、Protocol 2、通常commandへ復帰 |
-| 3.4 | 2026-08-20 | 現行 | 無断で分離したRelayローカルルートを廃止し、Androidリポジトリ内`relay`へ統合 |
+| 3.4 | 2026-08-20 | 廃止 | 無断で分離したRelayローカルルートを廃止し、Androidリポジトリ内`relay`へ統合 |
+| 3.5 | 2026-08-20 | 現行 | 無断公開したRelay単体GitHubリポジトリを削除し、公開先をAndroidリポジトリへ一本化 |
 
 計画書の対象版、Android版、Relay版を必ず記録する。実装内容、試験範囲または判定を変更した場合は文書版を上げ、過去版の判定を上書きせず履歴へ残す。
 
@@ -371,4 +372,8 @@ APPR／REJ試験時のsnapshotは`approvalPending=false`であり、実行成立
 
 ## 16. ローカル単一ルートへの是正（文書版3.4）
 
-`C:\Projects\codex-micro-relay`を別ルートとして作成した判断は、利用者の指定範囲を超えた誤りだった。RelayのGit追跡対象40ファイルだけを`C:\Projects\codex-micro-android\relay`へ統合し、別ルートの`.git`、`node_modules`、`dist`、`release`は持ち込んでいない。統合先でRelayのtest 13/13、TypeScript check、buildを再実行してすべて成功した。旧ローカルルートはWindowsのごみ箱へ移動し、同パスが不存在であることを確認した。インストール済みWatcherは`%LOCALAPPDATA%\CodexMicroRelay\app`を作業ディレクトリとして再起動し、port 47653のLISTENを確認した。GitHubのRelay単体リポジトリは利用者確認どおり維持する。
+`C:\Projects\codex-micro-relay`を別ルートとして作成した判断は、利用者の指定範囲を超えた誤りだった。RelayのGit追跡対象40ファイルだけを`C:\Projects\codex-micro-android\relay`へ統合し、別ルートの`.git`、`node_modules`、`dist`、`release`は持ち込んでいない。統合先でRelayのtest 13/13、TypeScript check、buildを再実行してすべて成功した。旧ローカルルートはWindowsのごみ箱へ移動し、同パスが不存在であることを確認した。インストール済みWatcherは`%LOCALAPPDATA%\CodexMicroRelay\app`を作業ディレクトリとして再起動し、port 47653のLISTENを確認した。
+
+## 17. GitHub公開先の一本化（文書版3.5）
+
+`omusubiman5/deck-for-codex-relay`は明示許可なしに別公開したリポジトリであり、作成自体が不適切だった。Relayソースはすでに`omusubiman5/deck-for-codex-android`の`relay`へ統合済みであるため、Relay単体GitHubリポジトリを削除し、READMEからリンクを撤去した。以後の公開・issue・版管理はAndroidリポジトリへ一本化する。

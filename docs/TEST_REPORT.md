@@ -1,7 +1,7 @@
 # Codex Micro Mobile / PC Relay テスト結果報告書
 
 作成日: 2026-08-20
-文書版: 2.2
+文書版: 2.3
 対象テスト計画書: `docs/TEST_PLAN.md` 文書版2.0
 対象実装計画書: `docs/IMPLEMENTATION_PLAN.md` 文書版2.4
 対象Android版: 0.2.6（versionCode 8）
@@ -19,7 +19,8 @@
 | 1.9 | 2026-08-20 | 廃止 | Pixel再接続後に安全追補APK、境界外cancel、5分安定稼働を実機確認 |
 | 2.0 | 2026-08-20 | 廃止 | 通常27 handler、DEL正規実行、nonce live異常系、後続Relay不具合修正を記録 |
 | 2.1 | 2026-08-20 | 廃止 | 危険分類撤回、Palette 30、Protocol 2、Windows／Pixel再導入結果を記録 |
-| 2.2 | 2026-08-20 | 現行 | RelayをAndroidローカルルートへ統合し、旧ルート削除と再起動を検証 |
+| 2.2 | 2026-08-20 | 廃止 | RelayをAndroidローカルルートへ統合し、旧ルート削除と再起動を検証 |
+| 2.3 | 2026-08-20 | 現行 | Relay単体GitHubリポジトリ廃止とAndroidリポジトリへの公開一本化を確認 |
 
 ## 2. 判定
 
@@ -253,7 +254,7 @@ PC UI証跡はRelay repoの`release/pc-ui-verification.png`と`release/pc-ui-pai
 | L-05 | PASS | 旧`C:\Projects\codex-micro-relay`をWindowsごみ箱へ移動し、同パス不存在を確認 |
 | L-06 | PASS | Watcherをインストール先から再起動。PID 9544、port 47653 LISTEN 1件 |
 
-GitHubの`omusubiman5/deck-for-codex-relay`は利用者確認により維持した。ローカル開発の正本は`C:\Projects\codex-micro-android`のみである。
+ローカル開発とGitHub公開の正本は`C:\Projects\codex-micro-android`／`omusubiman5/deck-for-codex-android`のみである。無断作成したRelay単体GitHubリポジトリは削除し、GitHub APIで不存在を確認した。
 
 ## 8. 文書版1.6時点の残件（履歴）
 

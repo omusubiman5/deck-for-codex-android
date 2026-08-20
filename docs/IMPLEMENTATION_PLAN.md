@@ -1,7 +1,7 @@
 # Codex Micro Mobile / PC Relay 実装計画書
 
 作成日: 2026-08-19  
-版: 2.4（ローカル単一ルート統合版）
+版: 2.5（単一GitHubリポジトリ版）
 
 ### 文書改訂履歴
 
@@ -13,7 +13,8 @@
 | 2.1 | 2026-08-20 | 廃止 | 通常Palette 27キー、Danger 3キー、capability／MIC／nonce契約を追加 |
 | 2.2 | 2026-08-20 | 廃止 | 旧Palette 30記述を撤廃し、動的Action迂回拒否と画面外cancelを明記 |
 | 2.3 | 2026-08-20 | 廃止 | 危険分類の過剰設計を撤回し、公式30キーを同一Paletteへ復帰。詳細は`PALETTE_30_KEY_RESTORE_IMPLEMENTATION_PLAN.md` |
-| 2.4 | 2026-08-20 | 現行 | AndroidとRelayを`C:\Projects\codex-micro-android`の単一ローカルルートへ統合 |
+| 2.4 | 2026-08-20 | 廃止 | AndroidとRelayを`C:\Projects\codex-micro-android`の単一ローカルルートへ統合 |
+| 2.5 | 2026-08-20 | 現行 | 無断作成したRelay単体GitHubリポジトリを廃止し、公開先もAndroidの1リポジトリへ統一 |
 
 文書版はアプリ版とは独立して管理する。要件、画面、protocol、受入条件を変更する場合は文書版を上げ、改訂履歴へ追記する。
 
@@ -50,7 +51,7 @@ Android UIは、利用者指定の`ChatGPT Image 2026年8月19日 14_45_15.png`�
 - Androidはリポジトリ直下、Relayは同一ルート内の`relay`へ配置する。
 - `C:\Projects\codex-micro-relay`のような別プロジェクトルートを作成・維持しない。
 - Relayの`.git`、`node_modules`、`dist`、`release`は統合元から持ち込まず、必要時に同一ルート内で再生成する。
-- 公開済みのRelay単体GitHubリポジトリは配布元として維持できるが、ローカル開発は単一ルートを正とする。
+- 公開先も`omusubiman5/deck-for-codex-android`だけとし、Relay単体の別GitHubリポジトリを作成・維持しない。
 
 ## 2. 対象環境と製品構成
 
