@@ -1,8 +1,8 @@
 # Codex Micro Mobile / PC Relay 実装報告書
 
 作成日: 2026-08-20
-文書版: 3.3
-対象計画書: `docs/IMPLEMENTATION_PLAN.md` 文書版2.3／`docs/PALETTE_30_KEY_RESTORE_IMPLEMENTATION_PLAN.md` 文書版1.0
+文書版: 3.4
+対象計画書: `docs/IMPLEMENTATION_PLAN.md` 文書版2.4／`docs/PALETTE_30_KEY_RESTORE_IMPLEMENTATION_PLAN.md` 文書版1.0
 Android版: 0.2.6（versionCode 8）
 Relay版: 0.2.8
 
@@ -25,7 +25,8 @@ Relay版: 0.2.8
 | 3.0 | 2026-08-20 | 廃止 | README鬼レビューでAction迂回と画面外holdを修正、主要文書を整合 |
 | 3.1 | 2026-08-20 | 廃止 | Pixel再接続後に安全追補APK、境界外cancel、5分安定稼働を実機確認 |
 | 3.2 | 2026-08-20 | 廃止 | 通常27 handler、DEL、nonce live異常系、後続Relay不具合を修正・検証 |
-| 3.3 | 2026-08-20 | 現行 | 危険分類の過剰設計を撤回し、同一Palette 30キー、Protocol 2、通常commandへ復帰 |
+| 3.3 | 2026-08-20 | 廃止 | 危険分類の過剰設計を撤回し、同一Palette 30キー、Protocol 2、通常commandへ復帰 |
+| 3.4 | 2026-08-20 | 現行 | 無断で分離したRelayローカルルートを廃止し、Androidリポジトリ内`relay`へ統合 |
 
 計画書の対象版、Android版、Relay版を必ず記録する。実装内容、試験範囲または判定を変更した場合は文書版を上げ、過去版の判定を上書きせず履歴へ残す。
 
@@ -185,14 +186,14 @@ Windows PowerShell 5で日本語UIを正しく解釈させるため、管理UI s
 | 項目 | 値 |
 |---|---|
 | package version | `0.2.7` |
-| Windows ZIP | `C:\Projects\codex-micro-relay\release\codex-micro-relay-windows-x64.zip` |
+| Windows ZIP | `C:\Projects\codex-micro-android\relay\release\codex-micro-relay-windows-x64.zip` |
 | Windows ZIP SHA-256 | `eef140f986df17d6670a26af4641245aa330ceadc1b7eee5dffb4393275df39d` |
 | base commit | `d539641` |
 | safety commit | `0358eb4` |
 | guard test commit | `60b1464` |
 | full live追補commit | `acc617e` |
-| PC概要画面 | `C:\Projects\codex-micro-relay\release\pc-ui-verification.png` |
-| PCアプリ内QR画面 | `C:\Projects\codex-micro-relay\release\pc-ui-pairing-verification.png` |
+| PC概要画面 | `C:\Projects\codex-micro-android\relay\release\pc-ui-verification.png` |
+| PCアプリ内QR画面 | `C:\Projects\codex-micro-android\relay\release\pc-ui-pairing-verification.png` |
 
 ## 7. 検証結果
 
@@ -367,3 +368,7 @@ APPR／REJ試験時のsnapshotは`approvalPending=false`であり、実行成立
 ### 15.5 判定
 
 30キー復帰実装とProtocol 2の自動試験、Windows／Pixel導入、30件表示・enabled確認は**合格**。実承認要求でのAPPR／REJ成立、破棄可能taskでのDEL実機tap、Wi-Fi復帰、Mac実機、署名済みreleaseは**未完了**であり、製品全体の最終判定は受入保留とする。
+
+## 16. ローカル単一ルートへの是正（文書版3.4）
+
+`C:\Projects\codex-micro-relay`を別ルートとして作成した判断は、利用者の指定範囲を超えた誤りだった。RelayのGit追跡対象40ファイルだけを`C:\Projects\codex-micro-android\relay`へ統合し、別ルートの`.git`、`node_modules`、`dist`、`release`は持ち込んでいない。統合先でRelayのtest 13/13、TypeScript check、buildを再実行してすべて成功した。旧ローカルルートはWindowsのごみ箱へ移動し、同パスが不存在であることを確認した。インストール済みWatcherは`%LOCALAPPDATA%\CodexMicroRelay\app`を作業ディレクトリとして再起動し、port 47653のLISTENを確認した。GitHubのRelay単体リポジトリは利用者確認どおり維持する。

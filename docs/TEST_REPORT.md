@@ -1,9 +1,9 @@
 # Codex Micro Mobile / PC Relay テスト結果報告書
 
 作成日: 2026-08-20
-文書版: 2.1
-対象テスト計画書: `docs/TEST_PLAN.md` 文書版1.9
-対象実装計画書: `docs/IMPLEMENTATION_PLAN.md` 文書版2.3
+文書版: 2.2
+対象テスト計画書: `docs/TEST_PLAN.md` 文書版2.0
+対象実装計画書: `docs/IMPLEMENTATION_PLAN.md` 文書版2.4
 対象Android版: 0.2.6（versionCode 8）
 対象Relay版: 0.2.8／Protocol 2
 
@@ -18,7 +18,8 @@
 | 1.8 | 2026-08-20 | 廃止 | README鬼レビューで検出した危険Action迂回と境界外holdを修正・再判定 |
 | 1.9 | 2026-08-20 | 廃止 | Pixel再接続後に安全追補APK、境界外cancel、5分安定稼働を実機確認 |
 | 2.0 | 2026-08-20 | 廃止 | 通常27 handler、DEL正規実行、nonce live異常系、後続Relay不具合修正を記録 |
-| 2.1 | 2026-08-20 | 現行 | 危険分類撤回、Palette 30、Protocol 2、Windows／Pixel再導入結果を記録 |
+| 2.1 | 2026-08-20 | 廃止 | 危険分類撤回、Palette 30、Protocol 2、Windows／Pixel再導入結果を記録 |
+| 2.2 | 2026-08-20 | 現行 | RelayをAndroidローカルルートへ統合し、旧ルート削除と再起動を検証 |
 
 ## 2. 判定
 
@@ -241,7 +242,20 @@ PC UI証跡はRelay repoの`release/pc-ui-verification.png`と`release/pc-ui-pai
 
 各修正後に全Android build/test/Lint、Pixel再導入、関連実操作を再実行した。
 
-## 7. 文書版1.6時点の残件（履歴）
+## 7. ローカル単一ルート是正試験（文書版2.2）
+
+| ID | 結果 | 実測／証跡 |
+|---|---|---|
+| L-01 | PASS | 旧RelayのGit追跡40ファイルと`relay`配下をGit blob hashで照合し全件一致 |
+| L-02 | PASS | `relay/.git`なし。親のAndroidリポジトリで40ファイルを追跡可能 |
+| L-03 | PASS | `relay`で`npm ci`成功、audit脆弱性0 |
+| L-04 | PASS | Relay unit test 13/13、TypeScript check、build成功 |
+| L-05 | PASS | 旧`C:\Projects\codex-micro-relay`をWindowsごみ箱へ移動し、同パス不存在を確認 |
+| L-06 | PASS | Watcherをインストール先から再起動。PID 9544、port 47653 LISTEN 1件 |
+
+GitHubの`omusubiman5/deck-for-codex-relay`は利用者確認により維持した。ローカル開発の正本は`C:\Projects\codex-micro-android`のみである。
+
+## 8. 文書版1.6時点の残件（履歴）
 
 - Android実機範囲にはFAIL／BLOCKEDはない。
 - 全計画を合格にするには、D-06のWindows管理UI 3タブ実画面、D-07のUIボタン操作、C-12の通常終了後一度限り起動を別途確認する。

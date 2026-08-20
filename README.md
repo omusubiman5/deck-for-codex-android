@@ -63,7 +63,7 @@ Rate Limit Resetは30 Keycapとは別にUsage画面へ置き、適用条件を�
 
 ## Windows／Android導入とNearbyペアリング
 
-1. [Deck for Codex Relay](https://github.com/omusubiman5/deck-for-codex-relay)で`npm run package:windows`を実行し、`release/codex-micro-relay-windows-x64.zip`を生成／展開する。
+1. このリポジトリの`relay`ディレクトリで`npm ci`、`npm run package:windows`を実行し、`relay/release/codex-micro-relay-windows-x64.zip`を生成／展開する。Relay単体の公開先は[Deck for Codex Relay](https://github.com/omusubiman5/deck-for-codex-relay)。
 2. 展開先の`Install Codex Micro Relay.cmd`を実行する。Relayは`%LOCALAPPDATA%\CodexMicroRelay\app`へ導入される。
 3. Start Menuの「Codex Micro Relay」から管理UIを開き、Relay／Codex bridge／LAN状態を確認する。
 4. 開発用Android APKは`adb install -r app/build/outputs/apk/debug/app-debug.apk`で上書き導入する。

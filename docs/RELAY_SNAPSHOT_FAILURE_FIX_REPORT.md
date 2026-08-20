@@ -88,9 +88,9 @@ Android試験はシェル既定の`JAVA_HOME`とSDK pathが未設定だったた
 |---|---|
 | Relay version | `0.2.1` |
 | Relay Git commit | `0fda39f` |
-| Windows ZIP | `C:\Projects\codex-micro-relay\release\codex-micro-relay-windows-x64.zip` |
+| Windows ZIP | `C:\Projects\codex-micro-android\relay\release\codex-micro-relay-windows-x64.zip` |
 | ZIP SHA-256 | `e03c19637022aaf518b043b725c9a3936287812053032e90821e40d31693b656` |
-| 診断script | `C:\Projects\codex-micro-relay\scripts\diagnose-slot-store.mjs` |
+| 診断script | `C:\Projects\codex-micro-android\relay\scripts\diagnose-slot-store.mjs` |
 
 ## 7. 判定
 

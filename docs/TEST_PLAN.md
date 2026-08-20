@@ -1,8 +1,8 @@
 # Codex Micro Mobile / PC Relay テスト計画書
 
 作成日: 2026-08-20
-文書版: 1.9
-対象実装計画書: `docs/IMPLEMENTATION_PLAN.md` 文書版2.3
+文書版: 2.0
+対象実装計画書: `docs/IMPLEMENTATION_PLAN.md` 文書版2.4
 対象Android版: 0.2.6（versionCode 8）
 対象Relay版: 0.2.8／Protocol 2
 
@@ -19,9 +19,18 @@
 | 1.6 | 2026-08-20 | 廃止 | 物理画面表示・4画面操作・機能readinessを必須化 |
 | 1.7 | 2026-08-20 | 廃止 | 通常27／Danger 3、30 capability、MIC、nonce、隔離実行を必須化 |
 | 1.8 | 2026-08-20 | 廃止 | README鬼レビューでAction迂回拒否と画面外cancel試験を追加 |
-| 1.9 | 2026-08-20 | 現行 | 危険分類を撤回し、同一Palette 30キーとProtocol 2の試験へ変更 |
+| 1.9 | 2026-08-20 | 廃止 | 危険分類を撤回し、同一Palette 30キーとProtocol 2の試験へ変更 |
+| 2.0 | 2026-08-20 | 現行 | Android／Relayのローカル単一ルート統合と旧ルート不存在確認を追加 |
 
 本書の試験範囲、合否条件、対象版を変更する場合は文書版を上げ、改訂履歴へ追記する。試験結果は同じ対象版を明記した`docs/TEST_REPORT.md`へ記録する。
+
+### 1.1 ローカル単一ルート是正試験（文書版2.0）
+
+- 旧Relayと統合先のGit追跡対象40ファイルが同一内容であること。
+- 統合先`relay`に別の`.git`がなく、親リポジトリで一括管理できること。
+- 統合先で`npm ci`、unit test、TypeScript check、buildが成功すること。
+- `C:\Projects\codex-micro-relay`が不存在であること。
+- Relay Watcherがインストール先から再起動し、設定portでLISTENすること。
 
 ## 2. 目的と完了条件
 
@@ -55,7 +64,7 @@
 | Android | Google Pixel 9a、USBデバッグ許可済み |
 | 通信 | 同一LAN、TLS付きWebSocket（WSS） |
 | Androidソース | `C:\Projects\codex-micro-android` |
-| Relayソース | `C:\Projects\codex-micro-relay` |
+| Relayソース | `C:\Projects\codex-micro-android\relay` |
 | Windows導入先 | `%LOCALAPPDATA%\CodexMicroRelay\app` |
 | 証跡 | コマンドログ、UI dump、スクリーンショット、APK/ZIP SHA-256 |
 
